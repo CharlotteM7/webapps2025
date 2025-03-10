@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Register New Admin{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Create a New Administrator</h2>
+  <form method="POST">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <button type="submit" class="btn btn-primary">Register Admin</button>
+  </form>
+</div>
+{% endblock %}
