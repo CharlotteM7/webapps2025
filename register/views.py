@@ -1,22 +1,26 @@
 # register/views.py
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
+import requests
 from django import forms
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import render, redirect
 from .models import CustomUser
-import requests
+
 
 # Inline login form
 class LoginForm(forms.Form):
     username = forms.CharField(label="Username")
     password = forms.CharField(widget=forms.PasswordInput, label="Password")
 
-# (Example) Register form for reference
+
+# Register form for reference
 class CustomUserCreationForm(UserCreationForm):
+    email = forms.EmailField(required=True, label="Email Address")
     class Meta:
         model = CustomUser
         fields = ['username', 'email', 'currency', 'password1', 'password2']
+
 
 def get_conversion_rate(target_currency):
     """
@@ -43,6 +47,7 @@ def get_conversion_rate(target_currency):
         print("Error calling conversion service:", e)
         return 1.0
 
+
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
@@ -63,10 +68,11 @@ def register(request):
             login(request, user)
             return redirect('home')
         else:
-            messages.error(request, "Please correct the errors below.")
+            messages.error(request, "Please correct the errors to continue.")
     else:
         form = CustomUserCreationForm()
     return render(request, 'register/register.html', {'form': form})
+
 
 def user_login(request):
     if request.method == 'POST':
@@ -92,4 +98,3 @@ def user_logout(request):
 
     messages.success(request, "You've been logged out.")
     return redirect('login')  # or redirect('home')
-

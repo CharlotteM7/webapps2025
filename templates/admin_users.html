@@ -1,29 +1,48 @@
 {% extends "base.html" %}
-{% block title %}All Users{% endblock %}
+{% block title %}All Registered Users{% endblock title %}
 {% block content %}
-<div class="container mt-4">
-  <h2>All Registered Users</h2>
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>Username</th>
-        <th>Email</th>
-        <th>Balance</th>
-        <th>Currency</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for user in users %}
-      <tr>
-        <td>{{ user.username }}</td>
-        <td>{{ user.email }}</td>
-        <td>{{ user.balance }}</td>
-        <td>{{ user.currency }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="4">No users found.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endblock %}
+    <div class="container mt-4">
+        <h2>All Registered Users</h2>
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Balance</th>
+                <th>Currency</th>
+                <th>Admin?</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for u in users %}
+                <tr>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.email }}</td>
+                    <td>{{ u.balance }}</td>
+                    <td>{{ u.currency }}</td>
+                    <td>
+                        {% if u.is_staff %}
+                            <span class="badge bg-success">Yes</span>
+                        {% else %}
+                            <span class="badge bg-secondary">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not u.is_staff %}
+                            <form method="POST" action="{% url 'make_admin' u.id %}">
+                                {% csrf_token %}
+                                <button class="btn btn-primary btn-sm">Make Admin</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6">No users found.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}

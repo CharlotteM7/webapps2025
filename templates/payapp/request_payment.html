@@ -1,12 +1,18 @@
 {% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Request a Payment{% endblock title %}
+
 {% block content %}
-<h2>Request a Payment</h2>
-<form method="POST">
-  {% csrf_token %}
-  <label for="recipient">Request from user:</label>
-  <input type="text" name="recipient" required>
-  <label for="amount">Amount:</label>
-  <input type="number" step="0.01" name="amount" required>
-  <button type="submit">Request Payment</button>
-</form>
-{% endblock %}
+<div class="container mt-4">
+  <h2>Request a Payment</h2>
+  <!-- Display user's current balance -->
+  <div class="mb-3">
+    <strong>Current Balance:</strong> {{ user.balance|floatformat:2 }} {{ user.currency }}
+  </div>
+  <form method="POST">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <button type="submit" class="btn btn-primary mt-3">Request Payment</button>
+  </form>
+</div>
+{% endblock content %}

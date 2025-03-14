@@ -1,19 +1,21 @@
-from django.shortcuts import render, redirect
-from django.db import transaction
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
 from django import forms
+from django.contrib import messages
 from django.contrib.auth import get_user_model
-from .models import Transaction
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import transaction
 from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_GET
-from thrift.transport import TSocket, TTransport
 from thrift.protocol import TBinaryProtocol
+from thrift.transport import TSocket, TTransport
+from .models import Transaction
+from django.utils import timezone
 
 # Inline definition of PaymentForm
 class PaymentForm(forms.Form):
     recipient = forms.CharField(max_length=150, label="Recipient Username")
     amount = forms.DecimalField(decimal_places=2, max_digits=10, label="Amount")
+
 
 @require_GET
 def conversion(request, currency1, currency2, amount):
@@ -59,12 +61,30 @@ def conversion(request, currency1, currency2, amount):
         'converted_amount': round(converted_amount, 2)
     })
 
+
 def home(request):
-    return render(request, 'payapp/home.html')
+    user = request.user
+    pending_requests_count = 0
+
+
+    if user.is_authenticated:
+        # Count pending payment requests for the current user
+        pending_requests_count = Transaction.objects.filter(
+            recipient=user,
+            transaction_type='REQUEST',
+            status='Pending'
+        ).count()
+
+    return render(request, 'payapp/home.html', {
+        'pending_requests_count': pending_requests_count,
+
+    })
+
 
 
 def is_staff_check(user):
     return user.is_staff or user.is_superuser
+
 
 @user_passes_test(is_staff_check)
 @transaction.atomic
@@ -73,12 +93,7 @@ def admin_users(request):
     User = get_user_model()
     all_users = User.objects.all()
     return render(request, 'admin_users.html', {'users': all_users})
-@user_passes_test(is_staff_check)
-def admin_users(request):
-    """View all user accounts."""
-    User = get_user_model()
-    all_users = User.objects.all()
-    return render(request, 'admin_users.html', {'users': all_users})
+
 
 @user_passes_test(is_staff_check)
 def admin_transactions(request):
@@ -86,30 +101,32 @@ def admin_transactions(request):
     all_txs = Transaction.objects.all()
     return render(request, 'admin_transactions.html', {'transactions': all_txs})
 
+
 @user_passes_test(is_staff_check)
 @transaction.atomic
-def admin_register_admin(request):
-    """Register new administrators (staff or superuser)."""
-    if request.method == 'POST':
-        # Example inline approach
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
+def make_admin(request, user_id):
+    """Elevate a regular user to admin (staff) status."""
+    User = get_user_model()
+    user_to_promote = get_object_or_404(User, id=user_id)
+    if user_to_promote.is_staff:
+        messages.warning(request, f"{user_to_promote.username} is already an admin.")
+    else:
+        user_to_promote.is_staff = True
+        user_to_promote.save()
+        messages.success(request, f"{user_to_promote.username} has been made an admin!")
+    return redirect('admin_users')  # or wherever you want to go after making admin
 
-        if username and password:
-            User = get_user_model()
-            if User.objects.filter(username=username).exists():
-                messages.error(request, "Username already exists.")
-            else:
-                # Create a staff user or superuser
-                new_admin = User.objects.create_user(username=username, email=email, password=password)
-                new_admin.is_staff = True  # or new_admin.is_superuser = True
-                new_admin.save()
-                messages.success(request, "New administrator created!")
-                return redirect('admin_users')
-        else:
-            messages.error(request, "Invalid form input.")
-    return render(request, 'admin_register_admin.html')
+
+@transaction.atomic
+@login_required
+def requests_list(request):
+    user = request.user
+    pending_requests = Transaction.objects.filter(
+        recipient=user,
+        transaction_type='REQUEST',
+        status='Pending'
+    )
+    return render(request, 'payapp/requests_list.html', {'pending_requests': pending_requests})
 
 
 @transaction.atomic
@@ -118,12 +135,10 @@ def make_payment(request):
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
-            # Extract cleaned data from the form
             recipient_name = form.cleaned_data['recipient']
-            amount = form.cleaned_data['amount']  # This remains a Decimal, not float
+            amount = form.cleaned_data['amount']
 
             sender = request.user
-            from django.contrib.auth import get_user_model
             User = get_user_model()
             recipient = User.objects.filter(username=recipient_name).first()
 
@@ -131,21 +146,21 @@ def make_payment(request):
                 messages.error(request, "Recipient not found.")
                 return redirect('make_payment')
 
-            # Now this comparison is Decimal - Decimal
             if sender.balance < amount:
                 messages.error(request, "Insufficient funds.")
                 return redirect('make_payment')
 
-            # Create a transaction
+
             transaction = Transaction.objects.create(
                 sender=sender,
                 recipient=recipient,
                 transaction_type='PAYMENT',
                 amount=amount,
-                status='Completed'
+                status='Completed',
+
             )
 
-            # Update balances (Decimal - Decimal)
+            # Update balances
             sender.balance -= amount
             recipient.balance += amount
             sender.save()
@@ -229,6 +244,7 @@ def handle_request(request, transaction_id):
 
     return render(request, 'payapp/handle_request.html', {'transaction': transaction})
 
+
 @login_required
 def transaction_history(request):
     user = request.user
@@ -251,6 +267,7 @@ def get_remote_timestamp():
         return None
     client = TimestampService.Client(protocol)
     transport.open()
-    ts = client.getTimestamp()
+    ts = client.getTimestamp()  # e.g. '2025-03-14T15:00:00.123456'
     transport.close()
     return ts
+

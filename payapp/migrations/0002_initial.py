@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -18,11 +17,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='transaction',
             name='recipient',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='received_transactions', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='received_transactions',
+                                    to=settings.AUTH_USER_MODEL),
         ),
         migrations.AddField(
             model_name='transaction',
             name='sender',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sent_transactions', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sent_transactions',
+                                    to=settings.AUTH_USER_MODEL),
         ),
     ]

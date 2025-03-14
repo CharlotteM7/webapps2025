@@ -1,6 +1,32 @@
 {% extends "base.html" %}
-{% block title %}Home{% endblock %}
+{% block title %}Home{% endblock title %}
+
 {% block content %}
-<h2>Welcome to the Online Payment Service!</h2>
-<p>This is the home page.</p>
-{% endblock %}
+    <div class="container mt-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+            <div class="container-fluid py-5">
+                <h1 class="display-4">Welcome to the Online Payment Service!</h1>
+                <p class="lead">Securely send, request, and manage your payments with ease.</p>
+                <hr class="my-4">
+                <p>Get started by making or requesting a payment.</p>
+                <a class="btn btn-primary btn-lg me-2" href="{% url 'make_payment' %}" role="button">Make a Payment</a>
+                <a class="btn btn-secondary btn-lg" href="{% url 'request_payment' %}" role="button">Request a
+                    Payment</a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <h2>Track Transactions</h2>
+                <p>View your complete transaction history easily.</p>
+            </div>
+            <div class="col-md-4">
+                <h2>Manage Your Account</h2>
+                <p>Access your balance and payment details at a glance.</p>
+            </div>
+            <div class="col-md-4">
+                <h2>Admin Tools</h2>
+                <p>Admins can manage users and transactions with our intuitive interface.</p>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,10 +14,14 @@ class Migration(migrations.Migration):
             name='Transaction',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('transaction_type', models.CharField(choices=[('PAYMENT', 'Payment'), ('REQUEST', 'Request')], default='PAYMENT', max_length=8)),
+                ('transaction_type',
+                 models.CharField(choices=[('PAYMENT', 'Payment'), ('REQUEST', 'Request')], default='PAYMENT',
+                                  max_length=8)),
                 ('amount', models.DecimalField(decimal_places=2, max_digits=10)),
                 ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('status', models.CharField(choices=[('Pending', 'Pending'), ('Completed', 'Completed'), ('Rejected', 'Rejected')], default='Pending', max_length=10)),
+                ('status', models.CharField(
+                    choices=[('Pending', 'Pending'), ('Completed', 'Completed'), ('Rejected', 'Rejected')],
+                    default='Pending', max_length=10)),
             ],
         ),
     ]

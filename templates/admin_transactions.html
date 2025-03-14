@@ -1,35 +1,37 @@
 {% extends "base.html" %}
 {% block title %}All Transactions{% endblock %}
 {% block content %}
-<div class="container mt-4">
-  <h2>All Transactions</h2>
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Sender</th>
-        <th>Recipient</th>
-        <th>Type</th>
-        <th>Amount</th>
-        <th>Status</th>
-        <th>Timestamp</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for t in transactions %}
-      <tr>
-        <td>{{ t.id }}</td>
-        <td>{{ t.sender.username }}</td>
-        <td>{{ t.recipient.username }}</td>
-        <td>{{ t.transaction_type }}</td>
-        <td>{{ t.amount }}</td>
-        <td>{{ t.status }}</td>
-        <td>{{ t.timestamp }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="7">No transactions found.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+    <div class="container mt-4">
+        <h2>All Transactions</h2>
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Sender</th>
+                <th>Recipient</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for t in transactions %}
+                <tr>
+                    <td>{{ t.id }}</td>
+                    <td>{{ t.sender.username }}</td>
+                    <td>{{ t.recipient.username }}</td>
+                    <td>{{ t.transaction_type }}</td>
+                    <td>{{ t.amount }}</td>
+                    <td>{{ t.status }}</td>
+                    <td>{{ t.timestamp }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7">No transactions found.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock %}

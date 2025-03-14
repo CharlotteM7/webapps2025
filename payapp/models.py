@@ -1,5 +1,7 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
+
+
 # Create your models here.
 class Transaction(models.Model):
     TRANSACTION_TYPE_CHOICES = [
@@ -19,6 +21,7 @@ class Transaction(models.Model):
     transaction_type = models.CharField(max_length=8, choices=TRANSACTION_TYPE_CHOICES, default='PAYMENT')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
+    remote_timestamp = models.CharField(max_length=50, null=True, blank=True)
     status = models.CharField(
         max_length=10,
         choices=[('Pending', 'Pending'), ('Completed', 'Completed'), ('Rejected', 'Rejected')],

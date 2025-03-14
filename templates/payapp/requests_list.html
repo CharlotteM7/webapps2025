@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Payment Requests{% endblock title %}
+
+{% block content %}
+    <div class="container mt-4">
+        <h3>Pending Payment Requests (You owe someone)</h3>
+        <!-- Display user's current balance -->
+        <div class="mb-3">
+            <strong>Current Balance:</strong>
+            {{ user.balance }} {{ user.currency }}
+        </div>
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>From (Requester)</th>
+                <th>Amount</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for req in pending_requests %}
+                <tr>
+                    <td>{{ req.sender.username }}</td>
+                    <td>{{ req.amount }}</td>
+                    <td>
+                        <form method="POST" action="{% url 'handle_request' req.id %}">
+                            {% csrf_token %}
+                            <button name="action" value="accept" class="btn btn-success btn-sm">Accept</button>
+                            <button name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
+                        </form>
+
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="3">No pending requests.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}

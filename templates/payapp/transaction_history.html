@@ -1,20 +1,52 @@
 {% extends "base.html" %}
+{% block title %}Your Transactions{% endblock title %}
+
 {% block content %}
-  <h2>Your Transactions</h2>
-  <h3>Sent</h3>
-  <ul>
-    {% for t in sent %}
-      <li>{{ t.timestamp }}: You paid {{ t.recipient }} {{ t.amount }} - {{ t.status }}</li>
-    {% empty %}
-      <li>No sent transactions.</li>
-    {% endfor %}
-  </ul>
-  <h3>Received</h3>
-  <ul>
-    {% for t in received %}
-      <li>{{ t.timestamp }}: {{ t.sender }} -> You for {{ t.amount }} - {{ t.status }}</li>
-    {% empty %}
-      <li>No received transactions.</li>
-    {% endfor %}
-  </ul>
-{% endblock %}
+    <div class="container mt-4">
+        <h2>Your Transactions</h2>
+
+        <!-- Display user's current balance -->
+        <div class="mb-3">
+            <strong>Current Balance:</strong>
+            {{ user.balance }} {{ user.currency }}
+        </div>
+
+        {% if sent|length > 0 or received|length > 0 %}
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Counterparty</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- Display sent transactions -->
+                {% for t in sent %}
+                    <tr>
+                        <td>{{ t.timestamp }}</td>
+                        <td>Sent Payment</td>
+                        <td>{{ t.recipient.username }}</td>
+                        <td>{{ t.amount }}</td>
+                        <td>{{ t.status }}</td>
+                    </tr>
+                {% endfor %}
+                <!-- Display received transactions -->
+                {% for t in received %}
+                    <tr>
+                        <td>{{ t.timestamp }}</td>
+                        <td>Received Payment</td>
+                        <td>{{ t.sender.username }}</td>
+                        <td>{{ t.amount }}</td>
+                        <td>{{ t.status }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No transactions found.</p>
+        {% endif %}
+    </div>
+{% endblock content %}
