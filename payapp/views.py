@@ -150,6 +150,8 @@ def make_payment(request):
                 messages.error(request, "Insufficient funds.")
                 return redirect('make_payment')
 
+            # Now that all checks have passed, get the remote timestamp.
+            remote_ts = get_remote_timestamp()
 
             transaction = Transaction.objects.create(
                 sender=sender,
@@ -157,7 +159,7 @@ def make_payment(request):
                 transaction_type='PAYMENT',
                 amount=amount,
                 status='Completed',
-
+                remote_timestamp=remote_ts,
             )
 
             # Update balances
@@ -175,12 +177,12 @@ def make_payment(request):
     return render(request, 'payapp/make_payment.html', {'form': form})
 
 
+
 @login_required
 def request_payment(request):
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
-            # Get the recipient and amount from cleaned_data
             recipient_name = form.cleaned_data['recipient']
             amount = form.cleaned_data['amount']
 
@@ -192,13 +194,17 @@ def request_payment(request):
                 messages.error(request, "User not found.")
                 return redirect('request_payment')
 
+            # Get the remote timestamp once all checks are passed.
+            remote_ts = get_remote_timestamp()
+
             # Create a "Pending" transaction of type REQUEST
             Transaction.objects.create(
                 sender=sender,
                 recipient=recipient,
                 transaction_type='REQUEST',
                 amount=amount,
-                status='Pending'
+                status='Pending',
+                remote_timestamp=remote_ts,
             )
 
             messages.success(request, f"Payment request of {amount} sent to {recipient.username}.")
