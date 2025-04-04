@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'register.apps.RegisterConfig',
     'payapp.apps.PayappConfig',
+    'rest_framework',
     'crispy_forms',
     'crispy_bootstrap5',
 ]

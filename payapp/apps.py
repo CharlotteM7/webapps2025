@@ -19,10 +19,9 @@ class PayappConfig(AppConfig):
             from thrift.protocol import TBinaryProtocol
             from thrift.server import TServer
             from datetime import datetime
-            # Import the generated Thrift code for the timestamp service.
-            # Ensure that the generated code is in the correct location in your project.
+
             try:
-                from payapp.gen_py.timestamp_service import TimestampService
+                from payapp.gen import TimestampService
             except ImportError as e:
                 print("Error importing Thrift generated code:", e)
                 return

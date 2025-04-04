@@ -20,7 +20,7 @@ from django.urls import path
 
 from payapp.views import (
     home, make_payment, request_payment, requests_list, conversion, handle_request,
-    transaction_history, admin_users, admin_transactions, make_admin
+    transaction_history, admin_users, admin_transactions, make_admin, remote_timestamp_view
 )
 from register.views import register, user_login, user_logout
 
@@ -47,4 +47,7 @@ urlpatterns = [
 
     # Currency conversion RESTful service
     path('conversion/<str:currency1>/<str:currency2>/<str:amount>/', conversion, name='conversion'),
+
+    # RTC
+    path('remote-timestamp/', remote_timestamp_view, name='remote_timestamp'),
 ]

@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_GET
 from thrift.protocol import TBinaryProtocol
@@ -261,13 +261,20 @@ def get_remote_timestamp():
     transport = TTransport.TBufferedTransport(transport)
     protocol = TBinaryProtocol.TBinaryProtocol(transport)
     try:
-        from payapp.gen_py.timestamp_service import TimestampService
+        from payapp.gen.TimestampService import Client
     except ImportError as e:
         print("Error importing Thrift generated code:", e)
         return None
-    client = TimestampService.Client(protocol)
+    client = Client(protocol)
     transport.open()
     ts = client.getTimestamp()  # e.g. '2025-03-14T15:00:00.123456'
     transport.close()
     return ts
 
+
+@login_required
+def remote_timestamp_view(request):
+    ts = get_remote_timestamp()
+    if ts is None:
+        return HttpResponse("Error retrieving remote timestamp.")
+    return HttpResponse(f"Remote timestamp: {ts}")

@@ -30,8 +30,7 @@ def get_conversion_rate(target_currency):
     if target_currency.upper() == 'GBP':
         return 1.0
     try:
-        # Assuming your conversion service is running at localhost:8000
-        # and its endpoint is defined as:
+
         # /conversion/<currency1>/<currency2>/<amount>/
         # Here we pass 750 as the amount to get the rate.
         url = f'http://127.0.0.1:8000/conversion/GBP/{target_currency.upper()}/750/'
