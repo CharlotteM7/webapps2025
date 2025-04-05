@@ -1,3 +1,14 @@
+"""
+Views for the Online Payment Service.
+
+This module defines view functions for:
+- Currency conversion via a RESTful service.
+- Displaying the home page with pending payment requests.
+- Handling user transactions: making payments, requesting payments, and viewing transaction history.
+- Admin functionalities: viewing all users, transactions, and promoting users to admin.
+- Integrating a remote Thrift timestamp service for transaction timestamping.
+"""
+
 from django import forms
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -9,13 +20,11 @@ from django.views.decorators.http import require_GET
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TSocket, TTransport
 from .models import Transaction
-from django.utils import timezone
 
 # Inline definition of PaymentForm
 class PaymentForm(forms.Form):
     recipient = forms.CharField(max_length=150, label="Recipient Username")
     amount = forms.DecimalField(decimal_places=2, max_digits=10, label="Amount")
-
 
 @require_GET
 def conversion(request, currency1, currency2, amount):
@@ -61,7 +70,9 @@ def conversion(request, currency1, currency2, amount):
         'converted_amount': round(converted_amount, 2)
     })
 
-
+# --------------------------
+# User Views
+# --------------------------
 def home(request):
     user = request.user
     pending_requests_count = 0
@@ -80,42 +91,8 @@ def home(request):
 
     })
 
-
-
 def is_staff_check(user):
     return user.is_staff or user.is_superuser
-
-
-@user_passes_test(is_staff_check)
-@transaction.atomic
-def admin_users(request):
-    # even though it's read-only, let's wrap for consistency
-    User = get_user_model()
-    all_users = User.objects.all()
-    return render(request, 'admin_users.html', {'users': all_users})
-
-
-@user_passes_test(is_staff_check)
-def admin_transactions(request):
-    """View all payment transactions."""
-    all_txs = Transaction.objects.all()
-    return render(request, 'admin_transactions.html', {'transactions': all_txs})
-
-
-@user_passes_test(is_staff_check)
-@transaction.atomic
-def make_admin(request, user_id):
-    """Elevate a regular user to admin (staff) status."""
-    User = get_user_model()
-    user_to_promote = get_object_or_404(User, id=user_id)
-    if user_to_promote.is_staff:
-        messages.warning(request, f"{user_to_promote.username} is already an admin.")
-    else:
-        user_to_promote.is_staff = True
-        user_to_promote.save()
-        messages.success(request, f"{user_to_promote.username} has been made an admin!")
-    return redirect('admin_users')  # or wherever you want to go after making admin
-
 
 @transaction.atomic
 @login_required
@@ -128,10 +105,19 @@ def requests_list(request):
     )
     return render(request, 'payapp/requests_list.html', {'pending_requests': pending_requests})
 
-
 @transaction.atomic
 @login_required
 def make_payment(request):
+    """
+        Allows a logged-in user to make a direct payment to another registered user.
+
+        Validates the payment form, checks that the recipient exists and that the sender has sufficient funds.
+        Retrieves a remote timestamp via the Thrift service and creates a Payment transaction.
+        Updates the sender's and recipient's balances atomically.
+
+        Returns:
+            HttpResponse redirecting to the transaction history with a success or error message.
+        """
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
@@ -261,7 +247,41 @@ def transaction_history(request):
         'received': received,
     })
 
+# --------------------------
+# Admin Views
+# --------------------------
 
+@user_passes_test(is_staff_check)
+@transaction.atomic
+def admin_users(request):
+    # even though it's read-only, let's wrap for consistency
+    User = get_user_model()
+    all_users = User.objects.all()
+    return render(request, 'admin_users.html', {'users': all_users})
+
+@user_passes_test(is_staff_check)
+def admin_transactions(request):
+    """View all payment transactions."""
+    all_txs = Transaction.objects.all()
+    return render(request, 'admin_transactions.html', {'transactions': all_txs})
+
+@user_passes_test(is_staff_check)
+@transaction.atomic
+def make_admin(request, user_id):
+    """Elevate a regular user to admin (staff) status."""
+    User = get_user_model()
+    user_to_promote = get_object_or_404(User, id=user_id)
+    if user_to_promote.is_staff:
+        messages.warning(request, f"{user_to_promote.username} is already an admin.")
+    else:
+        user_to_promote.is_staff = True
+        user_to_promote.save()
+        messages.success(request, f"{user_to_promote.username} has been made an admin!")
+    return redirect('admin_users')  # or wherever you want to go after making admin
+
+# --------------------------
+# RTC
+# --------------------------
 def get_remote_timestamp():
     transport = TSocket.TSocket('localhost', 10000)
     transport = TTransport.TBufferedTransport(transport)
@@ -276,7 +296,6 @@ def get_remote_timestamp():
     ts = client.getTimestamp()  # e.g. '2025-03-14T15:00:00.123456'
     transport.close()
     return ts
-
 
 @login_required
 def remote_timestamp_view(request):

@@ -1,9 +1,30 @@
+"""
+Models for the Online Payment Service.
+This module defines the Transaction model for recording payments and payment requests,
+and the CustomUser model extending Django's AbstractUser to include currency and balance fields.
+"""
+
+
 from django.conf import settings
 from django.db import models
 
 
 # Create your models here.
 class Transaction(models.Model):
+    """
+       Represents a transaction (either a payment or a request) between two users.
+
+       Attributes:
+           sender: ForeignKey to the user initiating the transaction.
+           recipient: ForeignKey to the user receiving the transaction.
+           transaction_type: Type of transaction (PAYMENT or REQUEST).
+           amount: The monetary value involved in the transaction.
+           timestamp: The date and time when the transaction was created.
+           remote_timestamp: The timestamp obtained from the remote Thrift service.
+           status: The current status of the transaction (Pending, Completed, or Rejected).
+       """
+
+
     TRANSACTION_TYPE_CHOICES = [
         ('PAYMENT', 'Payment'),
         ('REQUEST', 'Request'),

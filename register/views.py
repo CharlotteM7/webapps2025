@@ -1,4 +1,12 @@
-# register/views.py
+"""
+Views for user registration and authentication.
+
+This module provides:
+- A custom login form (LoginForm)
+- A custom user creation form (CustomUserCreationForm) extending Django's UserCreationForm
+- A utility function get_conversion_rate() that calls a RESTful service to fetch a conversion rate
+- View functions for user registration, login, and logout
+"""
 import requests
 from django import forms
 from django.contrib import messages
@@ -10,12 +18,18 @@ from .models import CustomUser
 
 # Inline login form
 class LoginForm(forms.Form):
+    """
+       Simple login form with username and password fields.
+       """
     username = forms.CharField(label="Username")
     password = forms.CharField(widget=forms.PasswordInput, label="Password")
 
-
-# Register form for reference
+# Custom user creation form for registration
 class CustomUserCreationForm(UserCreationForm):
+    """
+        Extends Django's UserCreationForm to include an email field.
+        Also sets the CustomUser model and the fields to be used.
+        """
     email = forms.EmailField(required=True, label="Email Address")
     class Meta:
         model = CustomUser
@@ -48,6 +62,17 @@ def get_conversion_rate(target_currency):
 
 
 def register(request):
+    """
+       Handles user registration. On POST, validates the registration form, retrieves the
+       conversion rate for the selected currency, calculates the initial balance, and creates
+       the new user. On success, logs the user in and redirects to the home page.
+
+       Args:
+           request: The HTTP request object.
+
+       Returns:
+           HttpResponse: Renders the registration page or redirects on successful registration.
+       """
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
@@ -74,6 +99,16 @@ def register(request):
 
 
 def user_login(request):
+    """
+       Authenticates and logs in a user. On POST, checks the provided credentials and logs in
+       the user if valid; otherwise, displays an error message.
+
+       Args:
+           request: The HTTP request object.
+
+       Returns:
+           HttpResponse: Renders the login page or redirects to home on successful login.
+       """
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
@@ -91,9 +126,17 @@ def user_login(request):
     return render(request, 'register/login.html', {'form': form})
 
 
-def user_logout(request):
-    """Logs out the current user and redirects."""
-    logout(request)
 
+def user_logout(request):
+    """
+    Logs out the current user and redirects to the login page.
+
+    Args:
+        request: The HTTP request object.
+
+    Returns:
+        HttpResponse: Redirects to the login page after logout.
+    """
+    logout(request)
     messages.success(request, "You've been logged out.")
     return redirect('login')  # or redirect('home')

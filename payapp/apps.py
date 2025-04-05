@@ -1,7 +1,8 @@
+#This module configures the payapp Django application and starts the
+#Thrift timestamp service in a separate thread when the app is ready.
+
 import threading
-
 from django.apps import AppConfig
-
 
 class PayappConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
@@ -37,11 +38,11 @@ class PayappConfig(AppConfig):
             pfactory = TBinaryProtocol.TBinaryProtocolFactory()
             server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
             print("Thrift server running on port 10000...")
-            # Run the server. This is a blocking call.
+            # Run the server.
             server.serve()
 
         # Create and start a daemon thread to run the Thrift server
         thread = threading.Thread(target=run_thrift, daemon=True)
         thread.start()
-        # Optionally, wait a brief moment to ensure the server starts before other operations.
+        # Wait a brief moment to ensure the server starts before other operations.
         time.sleep(1)
