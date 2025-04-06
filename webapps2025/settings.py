@@ -24,7 +24,7 @@ SECRET_KEY = 'django-insecure-2j5bunfy35d&#6t=*u(+1_&oox!boln868774dv6=2*wd*qdhr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 AUTH_USER_MODEL = 'register.CustomUser'
 LOGIN_URL = '/webapps2025/register/login/'
 # Application definition
