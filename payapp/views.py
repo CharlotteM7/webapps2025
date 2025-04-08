@@ -20,6 +20,9 @@ from django.views.decorators.http import require_GET
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TSocket, TTransport
 from .models import Transaction
+from register.views import get_conversion_rate
+from decimal import Decimal
+
 
 # Inline definition of PaymentForm
 class PaymentForm(forms.Form):
@@ -123,7 +126,6 @@ def make_payment(request):
         if form.is_valid():
             recipient_name = form.cleaned_data['recipient']
             amount = form.cleaned_data['amount']
-
             sender = request.user
             User = get_user_model()
             recipient = User.objects.filter(username=recipient_name).first()
@@ -136,7 +138,12 @@ def make_payment(request):
                 messages.error(request, "Insufficient funds.")
                 return redirect('make_payment')
 
-            # Now that all checks have passed, get the remote timestamp.
+            # Convert amount if currencies are different
+            if sender.currency != recipient.currency:
+                conversion_rate = get_conversion_rate(recipient.currency)  # fetch rate from service
+                amount = Decimal(amount) * Decimal(conversion_rate)  # convert to recipient's currency
+
+            # Get remote timestamp
             remote_ts = get_remote_timestamp()
 
             transaction = Transaction.objects.create(
@@ -148,7 +155,7 @@ def make_payment(request):
                 remote_timestamp=remote_ts,
             )
 
-            # Update balances
+            # Update balances after transaction
             sender.balance -= amount
             recipient.balance += amount
             sender.save()
