@@ -8,7 +8,7 @@ This module defines view functions for:
 - Admin functionalities: viewing all users, transactions, and promoting users to admin.
 - Integrating a remote Thrift timestamp service for transaction timestamping.
 """
-
+import requests
 from django import forms
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -20,8 +20,8 @@ from django.views.decorators.http import require_GET
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TSocket, TTransport
 from .models import Transaction
-from register.views import get_conversion_rate
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
+from django.utils.dateparse import parse_datetime
 
 
 # Inline definition of PaymentForm
@@ -73,13 +73,34 @@ def conversion(request, currency1, currency2, amount):
         'converted_amount': round(converted_amount, 2)
     })
 
+def get_transaction_rate(from_currency, to_currency):
+    """
+    Fetches the conversion rate from from_currency to to_currency.
+    For transactions, we pass an amount of 1 so that the returned rate is directly usable.
+    Returns a Decimal conversion multiplier.
+    """
+    if from_currency.upper() == to_currency.upper():
+        return Decimal('1.0')
+    try:
+        url = f"http://127.0.0.1:8000/conversion/{from_currency.upper()}/{to_currency.upper()}/1/"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            rate = data.get('rate', 1.0)
+            return Decimal(str(rate))
+        else:
+            print("Transaction conversion service returned error:", response.status_code)
+            return Decimal('1.0')
+    except Exception as e:
+        print("Error calling transaction conversion service:", e)
+        return Decimal('1.0')
+
 # --------------------------
 # User Views
 # --------------------------
 def home(request):
     user = request.user
     pending_requests_count = 0
-
 
     if user.is_authenticated:
         # Count pending payment requests for the current user
@@ -89,9 +110,25 @@ def home(request):
             status='Pending'
         ).count()
 
+        # Check for new payments since the user's previous last_login
+        previous_last_login_iso = request.session.get('previous_last_login', '')
+        if previous_last_login_iso:
+            previous_last_login = parse_datetime(previous_last_login_iso)
+            if previous_last_login:
+                new_payments = Transaction.objects.filter(
+                    recipient=user,
+                    transaction_type='PAYMENT',
+                    timestamp__gt=previous_last_login
+                )
+                if new_payments.exists():
+                    messages.info(request,
+                        f"You have {new_payments.count()} new payment(s) received since your last login."
+                    )
+            # Now clear the stored last login so the notification doesn't appear again
+            del request.session['previous_last_login']
+
     return render(request, 'payapp/home.html', {
         'pending_requests_count': pending_requests_count,
-
     })
 
 def is_staff_check(user):
@@ -113,14 +150,7 @@ def requests_list(request):
 def make_payment(request):
     """
         Allows a logged-in user to make a direct payment to another registered user.
-
-        Validates the payment form, checks that the recipient exists and that the sender has sufficient funds.
-        Retrieves a remote timestamp via the Thrift service and creates a Payment transaction.
-        Updates the sender's and recipient's balances atomically.
-
-        Returns:
-            HttpResponse redirecting to the transaction history with a success or error message.
-        """
+    """
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
@@ -134,34 +164,52 @@ def make_payment(request):
                 messages.error(request, "Recipient not found.")
                 return redirect('make_payment')
 
+                # Prevent users from sending payment to themselves.
+            if sender == recipient:
+                messages.error(request, "You cannot send payment to yourself.")
+                return redirect('make_payment')
+
             if sender.balance < amount:
                 messages.error(request, "Insufficient funds.")
                 return redirect('make_payment')
 
-            # Convert amount if currencies are different
+            # For transaction conversion, use sender.currency as the source and recipient.currency as the target.
             if sender.currency != recipient.currency:
-                conversion_rate = get_conversion_rate(recipient.currency)  # fetch rate from service
-                amount = Decimal(amount) * Decimal(conversion_rate)  # convert to recipient's currency
+                conversion_rate = get_transaction_rate(sender.currency, recipient.currency)
+                amount_in_recipient_currency = amount * conversion_rate
+                amount_in_recipient_currency = amount_in_recipient_currency.quantize(Decimal('0.01'),rounding=ROUND_HALF_UP)
+            else:
+                amount_in_recipient_currency = amount
+
+            # Debugging: Log the conversion result
+            print(
+                f"Transaction Conversion: {amount} {sender.currency} converts to {amount_in_recipient_currency} {recipient.currency} using rate {conversion_rate if sender.currency != recipient.currency else '1.0'}")
 
             # Get remote timestamp
             remote_ts = get_remote_timestamp()
 
+            # Create the transaction (store original amount and converted amount)
             transaction = Transaction.objects.create(
                 sender=sender,
                 recipient=recipient,
                 transaction_type='PAYMENT',
-                amount=amount,
+                amount=amount,  # amount in sender's currency
+                converted_amount=amount_in_recipient_currency,  # record the converted amount
                 status='Completed',
                 remote_timestamp=remote_ts,
             )
 
-            # Update balances after transaction
+            # Update sender's balance (deduct original amount)
             sender.balance -= amount
-            recipient.balance += amount
+            sender.balance = sender.balance.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+            # Update recipient's balance (add converted amount)
+            recipient.balance += amount_in_recipient_currency
+
             sender.save()
             recipient.save()
 
-            messages.success(request, f"Payment of {amount} to {recipient.username} completed.")
+            messages.success(request, f"Payment of {amount} {sender.currency} to {recipient.username} completed.")
             return redirect('transaction_history')
         else:
             messages.error(request, "Please correct the errors below.")
@@ -169,8 +217,7 @@ def make_payment(request):
         form = PaymentForm()
     return render(request, 'payapp/make_payment.html', {'form': form})
 
-
-
+@transaction.atomic
 @login_required
 def request_payment(request):
     if request.method == 'POST':
@@ -178,7 +225,6 @@ def request_payment(request):
         if form.is_valid():
             recipient_name = form.cleaned_data['recipient']
             amount = form.cleaned_data['amount']
-
             sender = request.user
             User = get_user_model()
             recipient = User.objects.filter(username=recipient_name).first()
@@ -187,20 +233,37 @@ def request_payment(request):
                 messages.error(request, "User not found.")
                 return redirect('request_payment')
 
-            # Get the remote timestamp once all checks are passed.
+            # Prevent requesting payment from yourself, if desired.
+            if sender == recipient:
+                messages.error(request, "You cannot request payment from yourself.")
+                return redirect('request_payment')
+
+            # For transaction conversion, use sender.currency as source and recipient.currency as target.
+            if sender.currency != recipient.currency:
+                conversion_rate = get_transaction_rate(sender.currency, recipient.currency)
+                amount_in_recipient_currency = amount * conversion_rate
+                amount_in_recipient_currency = amount_in_recipient_currency.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            else:
+                amount_in_recipient_currency = amount
+
+            # Get the remote timestamp
             remote_ts = get_remote_timestamp()
 
-            # Create a "Pending" transaction of type REQUEST
+            # Create a "Pending" transaction with conversion info stored
             Transaction.objects.create(
                 sender=sender,
                 recipient=recipient,
                 transaction_type='REQUEST',
-                amount=amount,
+                amount=amount,  # original amount in sender's currency
+                converted_amount=amount_in_recipient_currency,  # converted amount in recipient's currency
                 status='Pending',
                 remote_timestamp=remote_ts,
             )
 
-            messages.success(request, f"Payment request of {amount} sent to {recipient.username}.")
+            messages.success(
+                request,
+                f"Payment request of {amount} {sender.currency} (equivalent to {amount_in_recipient_currency} {recipient.currency}) sent to {recipient.username}."
+            )
             return redirect('transaction_history')
         else:
             messages.error(request, "Please correct the errors below.")
@@ -243,12 +306,19 @@ def handle_request(request, transaction_id):
 
     return render(request, 'payapp/handle_request.html', {'transaction': transaction})
 
-
 @login_required
 def transaction_history(request):
     user = request.user
     sent = user.sent_transactions.all()
     received = user.received_transactions.all()
+
+    # For received transactions, if converted_amount exists, use it.
+    for tx in received:
+        if tx.converted_amount:
+            tx.effective_amount = tx.converted_amount
+        else:
+            tx.effective_amount = tx.amount
+
     return render(request, 'payapp/transaction_history.html', {
         'sent': sent,
         'received': received,
@@ -300,7 +370,7 @@ def get_remote_timestamp():
         return None
     client = Client(protocol)
     transport.open()
-    ts = client.getTimestamp()  # e.g. '2025-03-14T15:00:00.123456'
+    ts = client.getTimestamp()
     transport.close()
     return ts
 

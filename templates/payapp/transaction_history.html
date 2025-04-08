@@ -15,35 +15,51 @@
         {% if sent|length > 0 or received|length > 0 %}
             <table class="table table-striped">
                 <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Counterparty</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                </tr>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Counterparty</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
                 </thead>
                 <tbody>
-                <!-- Display sent transactions -->
-                {% for t in sent %}
-                    <tr>
-                        <td>{{ t.timestamp }}</td>
-                        <td>Sent Payment</td>
-                        <td>{{ t.recipient.username }}</td>
-                        <td>{{ t.amount }}</td>
-                        <td>{{ t.status }}</td>
-                    </tr>
-                {% endfor %}
-                <!-- Display received transactions -->
-                {% for t in received %}
-                    <tr>
-                        <td>{{ t.timestamp }}</td>
-                        <td>Received Payment</td>
-                        <td>{{ t.sender.username }}</td>
-                        <td>{{ t.amount }}</td>
-                        <td>{{ t.status }}</td>
-                    </tr>
-                {% endfor %}
+                    <!-- Display sent transactions -->
+                    {% for t in sent %}
+                        <tr>
+                            <td>{{ t.timestamp|date:"l, F j, Y, g:i A" }}</td>
+                            <td>Sent Payment</td>
+                            <td>{{ t.recipient.username }}</td>
+                            <td>
+                                {{ t.amount }} {{ t.sender.currency }}
+                                {% if t.converted_amount %}
+                                    <br><small>
+                                        (Recipient receives: {{ t.converted_amount }} {{ t.recipient.currency }})
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td>{{ t.status }}</td>
+                        </tr>
+                    {% endfor %}
+                    <!-- Display received transactions -->
+                    {% for t in received %}
+                        <tr>
+                            <td>{{ t.timestamp|date:"l, F j, Y, g:i A" }}</td>
+                            <td>Received Payment</td>
+                            <td>{{ t.sender.username }}</td>
+                            <td>
+                                {% if t.converted_amount %}
+                                    {{ t.converted_amount }} {{ t.recipient.currency }}
+                                    <br><small>
+                                        (Original: {{ t.amount }} {{ t.sender.currency }})
+                                    </small>
+                                {% else %}
+                                    {{ t.amount }} {{ t.sender.currency }}
+                                {% endif %}
+                            </td>
+                            <td>{{ t.status }}</td>
+                        </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         {% else %}

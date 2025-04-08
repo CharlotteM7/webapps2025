@@ -4,12 +4,10 @@ This module defines the Transaction model for recording payments and payment req
 and the CustomUser model extending Django's AbstractUser to include currency and balance fields.
 """
 
-
 from django.conf import settings
 from django.db import models
 
 
-# Create your models here.
 class Transaction(models.Model):
     """
        Represents a transaction (either a payment or a request) between two users.
@@ -18,12 +16,12 @@ class Transaction(models.Model):
            sender: ForeignKey to the user initiating the transaction.
            recipient: ForeignKey to the user receiving the transaction.
            transaction_type: Type of transaction (PAYMENT or REQUEST).
-           amount: The monetary value involved in the transaction.
+           amount: The monetary value involved in the transaction (in the sender's currency).
+           converted_amount: The monetary value converted to the recipient's currency.
            timestamp: The date and time when the transaction was created.
            remote_timestamp: The timestamp obtained from the remote Thrift service.
            status: The current status of the transaction (Pending, Completed, or Rejected).
        """
-
 
     TRANSACTION_TYPE_CHOICES = [
         ('PAYMENT', 'Payment'),
@@ -39,8 +37,12 @@ class Transaction(models.Model):
         on_delete=models.CASCADE,
         related_name='received_transactions'
     )
-    transaction_type = models.CharField(max_length=8, choices=TRANSACTION_TYPE_CHOICES, default='PAYMENT')
+    transaction_type = models.CharField(
+        max_length=8, choices=TRANSACTION_TYPE_CHOICES, default='PAYMENT'
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    # New field to record the converted amount (in the recipient's currency)
+    converted_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     remote_timestamp = models.CharField(max_length=50, null=True, blank=True)
     status = models.CharField(

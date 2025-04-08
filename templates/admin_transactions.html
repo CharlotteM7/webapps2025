@@ -6,15 +6,15 @@
         <h2>All Transactions</h2>
         <table class="table table-striped">
             <thead>
-            <tr>
-                <th>ID</th>
-                <th>Sender</th>
-                <th>Recipient</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Timestamp</th>
-            </tr>
+                <tr>
+                    <th>ID</th>
+                    <th>Sender</th>
+                    <th>Recipient</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Timestamp</th>
+                </tr>
             </thead>
             <tbody>
             {% for t in transactions %}
@@ -23,9 +23,14 @@
                     <td>{{ t.sender.username }}</td>
                     <td>{{ t.recipient.username }}</td>
                     <td>{{ t.transaction_type }}</td>
-                    <td>{{ t.amount }}</td>
+                    <td>
+                        {{ t.amount }} {{ t.sender.currency }}
+                        {% if t.converted_amount %}
+                            <br><small>Converted: {{ t.converted_amount }} {{ t.recipient.currency }}</small>
+                        {% endif %}
+                    </td>
                     <td>{{ t.status }}</td>
-                    <td>{{ t.timestamp }}</td>
+                    <td>{{ t.timestamp|date:"l, F j, Y, g:i A" }}</td>
                 </tr>
             {% empty %}
                 <tr>

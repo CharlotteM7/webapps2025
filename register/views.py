@@ -14,6 +14,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
 from .models import CustomUser
+from decimal import Decimal
 
 
 # Inline login form
@@ -116,6 +117,12 @@ def user_login(request):
             pwd = form.cleaned_data['password']
             user = authenticate(username=uname, password=pwd)
             if user is not None:
+                # Store the previous last_login (if any) in the session.
+                # Note: user.last_login is None for a first-time login.
+                if user.last_login:
+                    request.session['previous_last_login'] = user.last_login.isoformat()
+                else:
+                    request.session['previous_last_login'] = ''
                 login(request, user)
                 messages.success(request, f"Welcome back, {uname}!")
                 return redirect('home')
