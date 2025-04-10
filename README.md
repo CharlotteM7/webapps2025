@@ -139,4 +139,4 @@ python manage.py runserver
 
 ## License
 
-This project is licensed under the MIT License - see the [Licence](LICENSE) file for details.
+This project is licensed under the MIT License - see the [License](License) file for details.
