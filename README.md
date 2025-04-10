@@ -27,7 +27,7 @@ The system also integrates:
 
 ## Built with
 - **Backend:** Django, Python
-- **Frontend:** HTML, Bootstrap 5, CSS
+- **Frontend:** HTML, Bootstrap 
 - **API & RPC:** Django REST Framework for the currency conversion API; Apache Thrift for the remote timestamp service.
 - **Database:** PostgreSQL
 - **Other Dependencies:** Requests library (for HTTP calls), django-crispy-forms for enhanced form rendering.
@@ -139,4 +139,4 @@ python manage.py runserver
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [License](license) file for details.
