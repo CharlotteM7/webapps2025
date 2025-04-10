@@ -181,10 +181,6 @@ def make_payment(request):
             else:
                 amount_in_recipient_currency = amount
 
-            # Debugging: Log the conversion result
-            print(
-                f"Transaction Conversion: {amount} {sender.currency} converts to {amount_in_recipient_currency} {recipient.currency} using rate {conversion_rate if sender.currency != recipient.currency else '1.0'}")
-
             # Get remote timestamp
             remote_ts = get_remote_timestamp()
 
@@ -233,7 +229,7 @@ def request_payment(request):
                 messages.error(request, "User not found.")
                 return redirect('request_payment')
 
-            # Prevent requesting payment from yourself, if desired.
+            # Prevent requesting payment from yourself
             if sender == recipient:
                 messages.error(request, "You cannot request payment from yourself.")
                 return redirect('request_payment')
@@ -254,12 +250,11 @@ def request_payment(request):
                 sender=sender,
                 recipient=recipient,
                 transaction_type='REQUEST',
-                amount=amount,  # original amount in sender's currency
-                converted_amount=amount_in_recipient_currency,  # converted amount in recipient's currency
+                amount=amount,
+                converted_amount=amount_in_recipient_currency,
                 status='Pending',
                 remote_timestamp=remote_ts,
             )
-
             messages.success(
                 request,
                 f"Payment request of {amount} {sender.currency} (equivalent to {amount_in_recipient_currency} {recipient.currency}) sent to {recipient.username}."
@@ -331,7 +326,6 @@ def transaction_history(request):
 @user_passes_test(is_staff_check)
 @transaction.atomic
 def admin_users(request):
-    # even though it's read-only, let's wrap for consistency
     User = get_user_model()
     all_users = User.objects.all()
     return render(request, 'admin_users.html', {'users': all_users})
@@ -354,7 +348,7 @@ def make_admin(request, user_id):
         user_to_promote.is_staff = True
         user_to_promote.save()
         messages.success(request, f"{user_to_promote.username} has been made an admin!")
-    return redirect('admin_users')  # or wherever you want to go after making admin
+    return redirect('admin_users')
 
 # --------------------------
 # RTC

@@ -14,8 +14,6 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
 from .models import CustomUser
-from decimal import Decimal
-
 
 # Inline login form
 class LoginForm(forms.Form):
@@ -52,7 +50,6 @@ def get_conversion_rate(target_currency):
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
-            # Expecting the JSON to include a 'rate' field
             return data.get('rate', 1.0)
         else:
             print("Conversion service returned error code:", response.status_code)
@@ -146,4 +143,4 @@ def user_logout(request):
     """
     logout(request)
     messages.success(request, "You've been logged out.")
-    return redirect('login')  # or redirect('home')
+    return redirect('login')
