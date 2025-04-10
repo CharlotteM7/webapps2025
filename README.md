@@ -3,48 +3,14 @@
 ## Table of Contents
 
 - [About the Project](#about-the-project)
-  - [Built with](#built-with)
+- [Built with](#built-with)
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
-- Credits(#credits)
+- [Credits](#credits)
 - [License](#license)
 
 ![image](https://github.com/user-attachments/assets/942da36b-3e26-4f74-bdd7-c7e9e8b56abd)
-
-
-## About the Project
-
-This repository contains an Online Payment Service built with Django. A project that forms part of the Web Application and Services module for Advanced Computer Science MSc. 
-It allows users to register, log in, and manage their account balance in different currencies. 
-Users can make direct payments, request payments, and view their transaction history. Administrators can view all users, promote users to admin, and manage all transactions.
-
-## Built with
-- **Backend:** Django, Python 3  
-- **Frontend:** HTML, Bootstrap 5, CSS  
-- **API & RPC:** Django REST Framework (for conversion APIs) and Apache Thrift (for remote timestamping)  
-- **Database:** PostgreSQL  
-- **Libraries:** requests, django-crispy-forms, thrift
-
-## Features
-Multi-user system with custom user model and balance tracking
-Currency conversion on user registration via a RESTful service
-Transaction management: send and request payments, handle pending requests
-Administrator pages: view all users, view all transactions, promote users to admin
-Remote Thrift service for timestamping transactions
-Bootstrap & Crispy Forms for polished UI
-SQLite database (default)
-
-what else should my readme have? # Online Payment Service Project 
-
-## Table of Contents
-
-- [About the Project](#about-the-project)
-  - [Built with](#built-with)
-- [Features](#features)
-- [Installation and Setup](#installation)
-- [Usage](#usage)
-- [License](#license)
 
 
 ## About the Project
